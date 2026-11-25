@@ -1,0 +1,9 @@
+{
+  "reason": "frontier_exhausted",
+  "target_coverage": 0.9,
+  "coverage": 0.10345342847718154,
+  "explored_cells": 36694,
+  "total_cells": 354691,
+  "first_reached_at_ros_seconds": 1795626134.9585564,
+  "wall_time": "2026-11-25T17:02:14.958598+00:00"
+}
