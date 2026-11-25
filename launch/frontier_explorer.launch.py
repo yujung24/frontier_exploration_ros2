@@ -37,6 +37,12 @@ def _create_frontier_actions(context):
     selection_mode = LaunchConfiguration("selection_mode")
     time_strategy = LaunchConfiguration("time_strategy")
     planner_id = LaunchConfiguration("planner_id")
+    mission_manager_enabled = LaunchConfiguration("mission_manager_enabled")
+    mission_config = LaunchConfiguration("mission_config")
+    world_name = LaunchConfiguration("world_name")
+    mission_output = LaunchConfiguration("mission_output")
+    rviz_enabled = LaunchConfiguration("rviz_enabled")
+    rviz_config = LaunchConfiguration("rviz_config")
 
     frontier_overrides: dict[str, Any] = {
         "use_sim_time": use_sim_time,
@@ -55,6 +61,14 @@ def _create_frontier_actions(context):
     )
     if control_service_enabled_override is not None:
         frontier_overrides["control_service_enabled"] = control_service_enabled_override
+
+    mission_enabled_value = mission_manager_enabled.perform(context).strip().lower()
+    if mission_enabled_value in ("true", "1", "yes", "on"):
+        frontier_overrides["control_service_enabled"] = True
+
+    selection_mode_value = selection_mode.perform(context).strip().lower()
+    if selection_mode_value:
+        frontier_overrides["selection_mode"] = selection_mode_value
 
     frontier_node = Node(
         package="frontier_exploration_ros2",
@@ -79,6 +93,7 @@ def _create_frontier_actions(context):
         parameters=[
             params_file,
             {
+                "use_sim_time": use_sim_time,
                 "selection_mode": selection_mode,
                 "time_strategy": time_strategy,
                 "planner_id": planner_id,
@@ -86,13 +101,47 @@ def _create_frontier_actions(context):
         ],
     )
 
-    selection_mode_value = selection_mode.perform(context).strip().lower()
-    if selection_mode_value:
-        frontier_overrides["selection_mode"] = selection_mode_value
-
     actions = [frontier_node]
-    if selection_mode_value == "travel_time":
+
+    rviz_enabled_value = rviz_enabled.perform(context).strip().lower()
+    if rviz_enabled_value in ("true", "1", "yes", "on"):
+        actions.append(
+            Node(
+                package="rviz2",
+                executable="rviz2",
+                name="rviz2_frontier_mission",
+                namespace=namespace,
+                output="screen",
+                arguments=["-d", rviz_config],
+                parameters=[{"use_sim_time": use_sim_time}],
+            )
+        )
+
+    if selection_mode.perform(context).strip().lower() == "travel_time":
         actions.append(selector_node)
+
+    mission_enabled_value = mission_manager_enabled.perform(context).strip().lower()
+    if mission_enabled_value in ("true", "1", "yes", "on"):
+        frontier_overrides["control_service_enabled"] = True
+        mission_node = Node(
+            package="frontier_exploration_ros2",
+            executable="mission_manager.py",
+            name="mission_manager",
+            namespace=namespace,
+            output="screen",
+            arguments=["--ros-args", "--log-level", log_level],
+            parameters=[
+                params_file,
+                {
+                    "mission_config": mission_config,
+                    "world_name": world_name,
+                    "output": mission_output,
+                    "use_sim_time": use_sim_time,
+                },
+            ],
+        )
+        actions.append(mission_node)
+
     return actions
 
 
@@ -169,6 +218,36 @@ def generate_launch_description():
                 "planner_id",
                 default_value="GridBased",
                 description="Optional planner ID for the frontier explorer.",
+            ),
+            DeclareLaunchArgument(
+                "mission_manager_enabled",
+                default_value="false",
+                description="Enable post-coverage start-pose return and fixed final-destination navigation.",
+            ),
+            DeclareLaunchArgument(
+                "mission_config",
+                default_value=str(Path(pkg_share) / "config" / "mission.yaml"),
+                description="YAML file containing fixed final poses by world name.",
+            ),
+            DeclareLaunchArgument(
+                "world_name",
+                default_value="default",
+                description="World key used in the Mission Manager YAML configuration.",
+            ),
+            DeclareLaunchArgument(
+                "mission_output",
+                default_value="mission_result.json",
+                description="Output JSON path for mission navigation and timing data.",
+            ),
+            DeclareLaunchArgument(
+                "rviz_enabled",
+                default_value="true",
+                description="Automatically launch RViz with live map, costmap, TF, laser scan, and frontier displays.",
+            ),
+            DeclareLaunchArgument(
+                "rviz_config",
+                default_value=str(Path(pkg_share) / "config" / "frontier_mission.rviz"),
+                description="RViz configuration used for live exploration visualization.",
             ),
             OpaqueFunction(function=_create_frontier_actions),
         ]

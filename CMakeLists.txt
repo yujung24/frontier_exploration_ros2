@@ -173,6 +173,7 @@ install(
   PROGRAMS
     scripts/travel_time_selector.py
     scripts/coverage_monitor.py
+    scripts/mission_manager.py
   DESTINATION lib/${PROJECT_NAME}
 )
 

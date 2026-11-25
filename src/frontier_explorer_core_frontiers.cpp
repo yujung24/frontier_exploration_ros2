@@ -490,6 +490,7 @@ FrontierSelectionResult FrontierExplorerCore::select_frontier(
     if (best_frontier.has_value()) {
       return {best_frontier, "observation"};
     }
+    return {std::nullopt, "observation"};
   }
 
   if (params.selection_mode == "travel_time") {
@@ -527,6 +528,11 @@ FrontierSelectionResult FrontierExplorerCore::select_frontier(
     if (best_frontier.has_value()) {
       return {best_frontier, "safety"};
     }
+    return {std::nullopt, "safety"};
+  }
+
+  if (params.selection_mode != "mrtsp") {
+    return {std::nullopt, params.selection_mode};
   }
 
   const FrontierSequence ordered_frontiers = build_mrtsp_frontier_sequence(frontiers, current_pose);

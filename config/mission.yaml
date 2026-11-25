@@ -1,0 +1,25 @@
+# Fixed post-exploration destinations by world.
+# The mission manager captures the robot's first available map -> base-frame pose
+# automatically, then uses the matching destination below for final navigation.
+worlds:
+  default:
+    position:
+      x: 0.0
+      y: 0.0
+      z: 0.0
+    orientation:
+      x: 0.0
+      y: 0.0
+      z: 0.0
+      w: 1.0
+
+  mixed_rooms:
+    position:
+      x: 0.0
+      y: 0.0
+      z: 0.0
+    orientation:
+      x: 0.0
+      y: 0.0
+      z: 0.0
+      w: 1.0

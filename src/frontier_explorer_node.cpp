@@ -386,7 +386,8 @@ FrontierExplorerNode::FrontierExplorerNode(const rclcpp::NodeOptions & options)
 
   RCLCPP_INFO(
     this->get_logger(),
-    "Frontier explorer initialized with autostart=%s, control_service_enabled=%s, map '%s', global costmap '%s', local costmap '%s', frontier action '%s'",
+    "Frontier explorer initialized with selection_mode=%s, autostart=%s, control_service_enabled=%s, map '%s', global costmap '%s', local costmap '%s', frontier action '%s'",
+    params_.selection_mode.c_str(),
     autostart_ ? "true" : "false",
     control_service_enabled_ ? "true" : "false",
     params_.map_topic.c_str(),
@@ -504,17 +505,14 @@ void FrontierExplorerNode::ensureMapProcessingTimer()
     return;
   }
 
-  if (!effective_map_processing_rate_hz_.has_value() || *effective_map_processing_rate_hz_ <= 0.0) {
-    return;
-  }
-
   if (map_processing_timer_) {
     return;
   }
 
+  const double rate_hz = effective_map_processing_rate_hz_.value_or(params_.map_processing_rate_hz);
   map_processing_timer_ = this->create_wall_timer(
     std::chrono::duration_cast<std::chrono::nanoseconds>(
-      std::chrono::duration<double>(1.0 / *effective_map_processing_rate_hz_)),
+      std::chrono::duration<double>(1.0 / rate_hz)),
     std::bind(&FrontierExplorerNode::mapProcessingTimerCallback, this));
 }
 
@@ -571,7 +569,10 @@ bool FrontierExplorerNode::maybeFinalizeMapProcessingRateEstimate()
       *effective_map_processing_rate_hz_);
   }
 
-  ensureMapProcessingTimer();
+  if (*effective_map_processing_rate_hz_ != params_.map_processing_rate_hz) {
+    map_processing_timer_.reset();
+    ensureMapProcessingTimer();
+  }
   return true;
 }
 
@@ -610,11 +611,10 @@ void FrontierExplorerNode::startExplorationRuntime()
     topic_qos_profiles_.make_local_costmap_qos(),
     std::bind(&FrontierExplorerNode::localCostmapCallback, this, std::placeholders::_1));
   if (params_.map_processing_rate_hz > 0.0) {
-    if (effective_map_processing_rate_hz_.has_value()) {
-      ensureMapProcessingTimer();
-    } else {
+    if (!effective_map_processing_rate_hz_.has_value()) {
       resetMapProcessingCalibrationWindow();
     }
+    ensureMapProcessingTimer();
   }
 
   {

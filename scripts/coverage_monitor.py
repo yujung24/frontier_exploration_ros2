@@ -3,6 +3,7 @@
 import argparse
 import json
 import math
+import time
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -156,7 +157,9 @@ class CoverageMonitor(Node):
         self.latest_coverage = 0.0
         self.finished = False
         self.stop_requested = False
+        self.last_progress_log_wall = 0.0
 
+        self.coverage_reached_pub = self.create_publisher(Empty, args.coverage_reached_topic, 10)
         self.create_subscription(OccupancyGrid, args.map_topic, self.map_callback, 10)
         self.create_subscription(Empty, args.completion_topic, self.completion_callback, 10)
         self.stop_client = self.create_client(ControlExploration, args.service_name)
@@ -206,6 +209,13 @@ class CoverageMonitor(Node):
             f"Coverage: {coverage:.4%} ({explored_cells}/{total_cells})"
         )
 
+        wall_now = time.time()
+        if wall_now - self.last_progress_log_wall >= float(self.args.progress_log_interval):
+            self.last_progress_log_wall = wall_now
+            self.get_logger().info(
+                f"Exploration progress: {coverage:.2%} ({explored_cells}/{total_cells} cells), target={self.threshold:.0%}"
+            )
+
         if 10 * explored_cells >= 9 * total_cells and coverage + 1e-12 >= self.threshold:
             now = self.get_clock().now().nanoseconds / 1e9
             wall_time = datetime.now(timezone.utc).isoformat()
@@ -214,7 +224,9 @@ class CoverageMonitor(Node):
             self.get_logger().info(
                 f"Target reached: {coverage:.2%} ({explored_cells}/{total_cells}) at {wall_time}"
             )
-            self.request_stop()
+            self.coverage_reached_pub.publish(Empty())
+            if self.args.auto_stop:
+                self.request_stop()
 
     def completion_callback(self, _msg):
         if self.finished:
@@ -291,6 +303,13 @@ def build_parser():
     parser.add_argument("--origin-y", type=float, default=0.0)
     parser.add_argument("--origin-yaw", type=float, default=0.0)
     parser.add_argument("--output", default="coverage_result.json")
+    parser.add_argument("--coverage-reached-topic", default="coverage_target_reached")
+    parser.add_argument("--auto-stop", action="store_true", default=True,
+                        help="Also call the frontier control stop service (default: enabled)")
+    parser.add_argument("--no-auto-stop", dest="auto_stop", action="store_false",
+                        help="Only publish the coverage event; let Mission Manager stop exploration")
+    parser.add_argument("--progress-log-interval", type=float, default=5.0,
+                        help="Seconds between INFO-level live coverage progress logs")
     return parser
 
 
@@ -299,6 +318,8 @@ def main():
     args, ros_args = parser.parse_known_args()
     if not 0.0 < args.target_coverage <= 1.0:
         parser.error("--target-coverage must be in (0, 1]")
+    if args.progress_log_interval <= 0.0:
+        parser.error("--progress-log-interval must be greater than 0")
 
     rclpy.init(args=ros_args)
     node = CoverageMonitor(args)

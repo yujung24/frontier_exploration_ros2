@@ -91,6 +91,33 @@ For a fair comparison, use the same world, initial robot pose, and target covera
 
 Use a different output filename for each method to keep the evaluation results separate.
 
+## 4. Optional Return-and-Final-Goal Mission
+
+Enable the separate Mission Manager to capture the robot's starting pose in `map`, stop the frontier explorer at 90% coverage, cancel the active Nav2 frontier goal, return to the captured pose, and then navigate to a world-specific fixed pose.
+
+Configure destinations in `config/mission.yaml` under `worlds/<world_name>`. Launch the selected frontier method with:
+
+```bash
+ros2 launch frontier_exploration_ros2 frontier_explorer.launch.py \
+  use_sim_time:=true \
+  selection_mode:=safety \
+  mission_manager_enabled:=true \
+  world_name:=mixed_rooms \
+  mission_output:=mixed_rooms_mission.json
+```
+
+Run the coverage monitor without its standalone stop request so only the Mission Manager controls the transition:
+
+```bash
+ros2 run frontier_exploration_ros2 coverage_monitor.py \
+  --reference-map "$(pwd)/maps/ground_truth/mixed_rooms.yaml" \
+  --target-coverage 0.90 \
+  --no-auto-stop \
+  --output mixed_rooms_coverage.json
+```
+
+The coverage monitor publishes `coverage_target_reached`; Mission Manager writes return/navigation timing and distance data to `mission_output`.
+
 ## Reference
 
 - [Original Frontier Exploration ROS 2 Repository](https://github.com/mertgulerx/frontier_exploration_ros2)

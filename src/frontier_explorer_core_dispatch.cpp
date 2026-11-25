@@ -33,6 +33,9 @@ void FrontierExplorerCore::try_send_next_goal()
 {
   // Main scheduler entrypoint: exits early unless maps, pose, and lifecycle gates are ready.
   if (!exploration_enabled) {
+    if (params.selection_mode == "travel_time") {
+      callbacks.log_info("Travel-time scheduler waiting: exploration_enabled=false");
+    }
     return;
   }
 
@@ -84,6 +87,28 @@ void FrontierExplorerCore::try_send_next_goal()
 
   const FrontierSequence & frontiers = snapshot.frontiers;
   FrontierSequence filtered_frontiers = filter_frontiers_for_suppression(frontiers);
+  if (params.selection_mode == "travel_time") {
+    callbacks.log_info(
+      "Travel-time snapshot: extracted=" + std::to_string(frontiers.size()) +
+      " filtered=" + std::to_string(filtered_frontiers.size()) +
+      " min_goal_distance=" + std::to_string(min_goal_distance));
+  }
+
+  if (params.selection_mode == "travel_time") {
+    callbacks.log_info(
+      "Travel-time mode publishing " + std::to_string(filtered_frontiers.size()) +
+      " Frontier candidates to /frontier_list");
+    publish_frontier_markers(filtered_frontiers);
+    if (filtered_frontiers.empty()) {
+      if (frontiers.empty()) {
+        handle_exploration_complete(*current_pose);
+      } else {
+        handle_all_frontiers_suppressed(*current_pose);
+      }
+    }
+    return;
+  }
+
   bool escape_mode_active = false;
   if (filtered_frontiers.empty() && !frontiers.empty()) {
     no_frontiers_reported = false;
@@ -446,7 +471,7 @@ void FrontierExplorerCore::consider_preempt_active_goal(const std::string & trig
   if (cancel_request_in_progress) {
   // Avoid duplicate cancel requests while previous cancel handshake is in flight.
   return;
-} 
+}
 
 if (!active_goal_cost_status.has_value()) {
   active_goal_blocked_reason.reset();

@@ -49,6 +49,7 @@ class TravelTimeSelector(Node):
         self.odometry = None
         self.batch = None
         self.retry_at = 0.0
+        self.last_diagnostic = ""
 
         strategy = self.declare_parameter("time_strategy", "C").value
         if strategy not in TIME_COST:
@@ -70,6 +71,10 @@ class TravelTimeSelector(Node):
             0.05,
             self.update_selection,
             clock=Clock(clock_type=ClockType.STEADY_TIME),
+        )
+        self.get_logger().info(
+            f"Travel-time selector active: use_sim_time={self.get_parameter('use_sim_time').value}, "
+            f"strategy={strategy}, planner={self.planner_id}, selection_mode=travel_time"
         )
 
     def map_callback(self, msg):
@@ -108,16 +113,6 @@ class TravelTimeSelector(Node):
         if pose is None:
             return None
         x, y, yaw, transform = pose
-        now = self.get_clock().now().nanoseconds
-        odom_stamp = stamp_ns(msg.header.stamp)
-        pose_stamp = stamp_ns(transform.header.stamp)
-        if (
-            min(odom_stamp, pose_stamp) <= 0
-            or not 0 <= now - odom_stamp <= 500_000_000
-            or not 0 <= now - pose_stamp <= 1_000_000_000
-            or abs(odom_stamp - pose_stamp) > 500_000_000
-        ):
-            return None
         v = msg.twist.twist.linear
         w = msg.twist.twist.angular
         if not all(map(math.isfinite, (x, y, yaw, v.x, v.y, v.z, w.x, w.y, w.z))):
@@ -140,9 +135,14 @@ class TravelTimeSelector(Node):
         return pose
 
     def frontiers_callback(self, msg):
-        if msg.header.frame_id != "map" or self.current_goal_active:
+        if msg.header.frame_id != "map":
             return
-        self.frontier_list = tuple((p.position.x, p.position.y) for p in msg.poses)
+        candidates = tuple((p.position.x, p.position.y) for p in msg.poses)
+        if candidates != self.frontier_list:
+            self.get_logger().info(
+                f"Travel-time received /frontier_list candidates={len(candidates)}"
+            )
+        self.frontier_list = candidates
 
     def update_selection(self):
         now = time.monotonic()
@@ -151,10 +151,31 @@ class TravelTimeSelector(Node):
             return
         if self.current_goal_active or not self.frontier_list or now < self.retry_at:
             return
-        if self.grid is None or not self.planner.server_is_ready() or not self.nav_client.server_is_ready():
+        if self.grid is None:
+            self.diagnose("Travel-time selector waiting: /map unavailable")
+            return
+        if not self.planner.server_is_ready():
+            self.diagnose("Travel-time selector waiting: compute_path_to_pose server unavailable")
+            return
+        if not self.nav_client.server_is_ready():
+            self.diagnose("Travel-time selector waiting: navigate_to_pose server unavailable")
             return
         motion = self.motion_snapshot()
         if motion is None:
+            msg = self.odometry
+            if msg is None:
+                reason = "Odometry has not arrived on /odom"
+            elif msg.header.frame_id != "odom":
+                reason = f"Odometry frame is '{msg.header.frame_id}', expected 'odom'"
+            elif msg.child_frame_id not in ("base_link", "base_footprint"):
+                reason = f"Odometry child frame is '{msg.child_frame_id}'"
+            else:
+                try:
+                    self.tf_buffer.lookup_transform("map", msg.child_frame_id, rclpy.time.Time())
+                    reason = "Odometry stamps/TF stamps are stale or exceed the timing tolerance"
+                except TransformException as exc:
+                    reason = f"map -> {msg.child_frame_id} TF unavailable: {exc}"
+            self.diagnose(f"Travel-time selector waiting: {reason}")
             return
         candidates = [
             point for point in self.frontier_list
@@ -162,7 +183,11 @@ class TravelTimeSelector(Node):
             and math.dist(motion.xy, point) >= self.min_goal_distance
         ]
         if not candidates:
+            self.diagnose(
+                f"Travel-time selector waiting: {len(self.frontier_list)} candidates are within min_goal_distance={self.min_goal_distance:.2f}m"
+            )
             return
+        self.last_diagnostic = ""
         self.batch = SimpleNamespace(
             frontiers=self.frontier_list,
             candidates=iter(candidates),
@@ -267,6 +292,10 @@ class TravelTimeSelector(Node):
             return
         goal = NavigateToPose.Goal()
         goal.pose = self.goal_pose(*batch.best_point)
+        self.get_logger().info(
+            f"Travel-time selected goal: ({batch.best_point[0]:.2f}, {batch.best_point[1]:.2f}), "
+            f"estimated_cost={batch.best_cost:.2f}s"
+        )
         self.current_goal_active = True
         future = self.nav_client.send_goal_async(goal)
         future.add_done_callback(self.goal_response_callback)
@@ -284,6 +313,11 @@ class TravelTimeSelector(Node):
         except Exception:
             status = None
         self.current_goal_active = False
+
+    def diagnose(self, message):
+        if message != self.last_diagnostic:
+            self.last_diagnostic = message
+            self.get_logger().warn(message)
 
 
 def main(args=None):
