@@ -1,80 +1,96 @@
-# frontier_exploration_ros2
+# Frontier Exploration ROS 2
 
-이 패키지는 [mertgulerx/frontier_exploration_ros2](https://github.com/mertgulerx/frontier_exploration_ros2)를 기반으로 작성되었습니다.
+This project is based on [mertgulerx/frontier_exploration_ros2](https://github.com/mertgulerx/frontier_exploration_ros2) and extends it with three frontier selection methods for autonomous exploration and performance evaluation using ROS 2, Gazebo, SLAM Toolbox, and Nav2.
 
-## 실행 방법
+## 1. Launch the Simulation
 
-### 1. 의존성 설치
+Run each command in a separate terminal.
 
-```bash
-cd ~/colcon_ws
-rosdep install --from-paths src --ignore-src -r -y
-```
-
-### 2. 빌드
+### Terminal 1: Gazebo
 
 ```bash
-cd ~/colcon_ws
-source /opt/ros/$ROS_DISTRO/setup.bash
-colcon build --packages-select frontier_exploration_ros2
-source install/setup.bash
-```
-
-### 3. Gazebo와 TurtleBot3 실행
-
-새 터미널에서 패키지 환경을 적용한 뒤 실행합니다.
-
-```bash
-cd ~/colcon_ws
-source install/setup.bash
-export TURTLEBOT3_MODEL=waffle_pi
 ros2 launch frontier_exploration_ros2 custom_world.launch.py \
   world:=mixed_rooms.world \
-  use_sim_time:=true
+  use_sim_time:=true \
+  x_pose:=0.0 y_pose:=0.0
 ```
 
-다른 월드를 사용할 경우 `world:=mixed_rooms.world`를 다음 파일 이름 중 하나로 변경할 수 있습니다.
-
-- `different_room_sizes.world`
-- `map_1.world`
-- `map_2.world`
-- `map_3.world`
-- `map_4.world`
-- `turning_corridors.world`
-- `two_passages.world`
-
-### 4. SLAM 및 Nav2 실행
-
-별도 터미널에서 SLAM과 Nav2가 실행되어 `/map`, costmap, TF 및 `navigate_to_pose` 액션을 제공해야 합니다.
-
-예시:
+### Terminal 2: SLAM Toolbox
 
 ```bash
-cd ~/colcon_ws
-source install/setup.bash
-export TURTLEBOT3_MODEL=waffle_pi
-
 ros2 launch slam_toolbox online_async_launch.py use_sim_time:=true
 ```
 
-다른 터미널에서:
+### Terminal 3: Nav2
 
 ```bash
-cd ~/colcon_ws
-source install/setup.bash
-export TURTLEBOT3_MODEL=waffle_pi
-
 ros2 launch nav2_bringup navigation_launch.py use_sim_time:=true
 ```
 
-### 5. 탐색 노드 실행
+## 2. Frontier Selection Methods
+
+Choose one of the following three methods.
+Run only one frontier explorer at a time.
+
+### Method 1: Safety-Based Selection
+
+Selects frontiers based on path cost and obstacle clearance.
 
 ```bash
-cd ~/colcon_ws
-source install/setup.bash
-
 ros2 launch frontier_exploration_ros2 frontier_explorer.launch.py \
-  use_sim_time:=true
+  use_sim_time:=true \
+  selection_mode:=safety \
+  safety_preferred_clearance_m:=0.80 \
+  safety_clearance_weight:=3.0 \
+  frontier_suppression_enabled:=true \
+  frontier_suppression_attempt_threshold:=2 \
+  frontier_suppression_timeout_s:=30.0 \
+  frontier_visit_tolerance:=0.80
 ```
 
-설정은 `config/params.yaml`에서 변경할 수 있습니다.
+### Method 2: Observation-Based Selection
+
+Selects frontiers based on their expected observation or information gain.
+
+```bash
+ros2 launch frontier_exploration_ros2 frontier_explorer.launch.py \
+  use_sim_time:=true \
+  selection_mode:=observation
+```
+
+### Method 3: Travel-Time-Based Selection
+
+Selects frontiers based on estimated travel time using Strategy C.
+
+```bash
+ros2 launch frontier_exploration_ros2 frontier_explorer.launch.py \
+  use_sim_time:=true \
+  selection_mode:=travel_time \
+  time_strategy:=C \
+  planner_id:=GridBased
+```
+
+## 3. Exploration Performance Evaluation
+
+Run the coverage monitor in a separate terminal, preferably before starting frontier exploration, to evaluate exploration coverage against the ground-truth occupancy map.
+
+```bash
+cd ~/colcon_ws/src/frontier_exploration_ros2
+
+ros2 run frontier_exploration_ros2 coverage_monitor.py \
+  --reference-map "$(pwd)/maps/ground_truth/mixed_rooms.yaml" \
+  --target-coverage 0.90 \
+  --output mixed_rooms_coverage.json
+```
+
+- **Reference map:** `maps/ground_truth/mixed_rooms.yaml`
+- **Target coverage:** 90%
+- **Output file:** `mixed_rooms_coverage.json`
+
+For a fair comparison, use the same world, initial robot pose, and target coverage for all three methods.
+
+Use a different output filename for each method to keep the evaluation results separate.
+
+## Reference
+
+- [Original Frontier Exploration ROS 2 Repository](https://github.com/mertgulerx/frontier_exploration_ros2)
