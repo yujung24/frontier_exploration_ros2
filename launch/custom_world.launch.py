@@ -81,7 +81,7 @@ def generate_launch_description():
     return LaunchDescription([
         DeclareLaunchArgument('world', default_value=default_world),
         DeclareLaunchArgument('use_sim_time', default_value='true'),
-        DeclareLaunchArgument('x_pose', default_value='-2.0'),
-        DeclareLaunchArgument('y_pose', default_value='-0.5'),
+        DeclareLaunchArgument('x_pose', default_value='0.0'),
+        DeclareLaunchArgument('y_pose', default_value='0.0'),
         OpaqueFunction(function=_create_actions),
     ])

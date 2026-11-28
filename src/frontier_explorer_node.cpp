@@ -886,6 +886,15 @@ void FrontierExplorerNode::handleControlRequest(
     return;
   }
 
+  if (runtime_state_ == RuntimeState::STOPPING) {
+    pending_quit_after_stop_ = pending_quit_after_stop_ || request->quit_after_stop;
+    response->accepted = true;
+    response->scheduled = false;
+    response->state = controlState();
+    response->message = "Exploration is already stopping";
+    return;
+  }
+
   requestStopExplorationRuntime(
     request->quit_after_stop,
     request->quit_after_stop ?

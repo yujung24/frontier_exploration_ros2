@@ -24,6 +24,7 @@ limitations under the License.
 #include <cmath>
 #include <iomanip>
 #include <limits>
+#include <set>
 #include <sstream>
 #include <stdexcept>
 #include <queue>
@@ -414,13 +415,26 @@ FrontierSelectionResult FrontierExplorerCore::select_frontier(
         });
       }
 
+      FrontierLike candidate = frontier;
       for (const auto & viewpoint : viewpoints) {
+        const double distance = std::hypot(
+          viewpoint.first - current_pose.position.x,
+          viewpoint.second - current_pose.position.y);
+        if (distance < params.frontier_selection_min_distance) {
+          continue;
+        }
+
         int mx = 0;
         int my = 0;
         if (!map->worldToMapNoThrow(viewpoint.first, viewpoint.second, mx, my)) {
           continue;
         }
         if (map->getCost(mx, my) >= params.occ_threshold) {
+          continue;
+        }
+
+        candidate.goal_point = viewpoint;
+        if (params.goal_skip_on_blocked_goal && frontier_cost_status(candidate).has_value()) {
           continue;
         }
 
@@ -469,9 +483,6 @@ FrontierSelectionResult FrontierExplorerCore::select_frontier(
           }
         }
 
-        const double distance = std::hypot(
-          viewpoint.first - current_pose.position.x,
-          viewpoint.second - current_pose.position.y);
         const double gain_metric = static_cast<double>(gain->visible_reveal_cell_count);
         const double cost =
           params.observation_distance_weight * distance
@@ -480,9 +491,7 @@ FrontierSelectionResult FrontierExplorerCore::select_frontier(
 
         if (cost < best_cost) {
           best_cost = cost;
-          FrontierLike updated = frontier;
-          updated.goal_point = viewpoint;
-          best_frontier = updated;
+          best_frontier = candidate;
         }
       }
     }
@@ -490,7 +499,6 @@ FrontierSelectionResult FrontierExplorerCore::select_frontier(
     if (best_frontier.has_value()) {
       return {best_frontier, "observation"};
     }
-    return {std::nullopt, "observation"};
   }
 
   if (params.selection_mode == "travel_time") {
@@ -500,10 +508,14 @@ FrontierSelectionResult FrontierExplorerCore::select_frontier(
   if (params.selection_mode == "safety") {
     double best_score = std::numeric_limits<double>::infinity();
     std::optional<FrontierLike> best_frontier;
-    const OccupancyGrid2d & safety_costmap = costmap.value_or(*map);
-
-    for (const auto & frontier : frontiers) {
-      const auto goal = frontier_position(frontier);
+    const OccupancyGrid2d & safety_costmap = costmap.has_value() ? *costmap : *map;
+    const auto score_goal = [&](const FrontierLike & candidate) {
+      const auto goal = frontier_position(candidate);
+      if (std::hypot(goal.first - current_pose.position.x, goal.second - current_pose.position.y) <
+        params.frontier_selection_min_distance || frontier_cost_status(candidate).has_value())
+      {
+        return false;
+      }
       const auto path = compute_safety_path_score(
         safety_costmap,
         current_pose,
@@ -514,24 +526,48 @@ FrontierSelectionResult FrontierExplorerCore::select_frontier(
         params.safety_clearance_weight,
         params.occ_threshold);
       if (!path.reachable) {
-        continue;
+        return false;
       }
 
       const double score = params.safety_distance_weight * path.path_length_m
         + path.clearance_cost;
       if (score < best_score) {
         best_score = score;
-        best_frontier = frontier;
+        best_frontier = candidate;
+      }
+      return true;
+    };
+
+    for (const auto & frontier : frontiers) {
+      if (score_goal(frontier) || !map.has_value()) {
+        continue;
+      }
+
+      // Try nearby known-free cells when the frontier's representative goal fails Safety.
+      const auto [goal_x, goal_y] = frontier_position(frontier);
+      const double search_radius = std::max(0.60, params.safety_robot_radius_m);
+      std::set<std::pair<int, int>> checked_cells;
+      for (double radius : {search_radius / 2.0, search_radius}) {
+        for (int direction = 0; direction < 8; ++direction) {
+          const double angle = detail::kPi * direction / 4.0;
+          int mx = 0;
+          int my = 0;
+          if (!map->worldToMapNoThrow(
+              goal_x + radius * std::cos(angle), goal_y + radius * std::sin(angle), mx, my) ||
+            map->getCost(mx, my) != static_cast<int>(OccupancyGrid2d::CostValues::FreeSpace) ||
+            !checked_cells.emplace(mx, my).second)
+          {
+            continue;
+          }
+          score_goal(frontier_with_goal_point(frontier, map->mapToWorld(mx, my)));
+        }
       }
     }
 
-    if (best_frontier.has_value()) {
-      return {best_frontier, "safety"};
-    }
-    return {std::nullopt, "safety"};
+    return {best_frontier, "safety"};
   }
 
-  if (params.selection_mode != "mrtsp") {
+  if (params.selection_mode != "mrtsp" && params.selection_mode != "observation") {
     return {std::nullopt, params.selection_mode};
   }
 
@@ -772,7 +808,12 @@ FrontierSequence FrontierExplorerCore::select_frontier_sequence(
   const geometry_msgs::msg::Pose & current_pose,
   const std::optional<FrontierLike> & initial_frontier) const
 {
-  (void)initial_frontier;
+  if (params.selection_mode == "safety") {
+    return initial_frontier.has_value() ? FrontierSequence{*initial_frontier} : FrontierSequence{};
+  }
+  if (params.selection_mode == "observation" && initial_frontier.has_value()) {
+    return {*initial_frontier};
+  }
   return build_mrtsp_frontier_sequence(frontiers, current_pose);
 }
 

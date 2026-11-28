@@ -35,18 +35,18 @@
       <static>true</static>
       <link name="structure">
         <collision name="wall_00">
-          <pose>4.5000 4.7600 0.5 0 0 0</pose>
+          <pose>3.1500 3.3320 0.5 0 0 0</pose>
           <geometry>
             <box>
-              <size>11.520 0.120 1.0</size>
+              <size>8.0640 0.0840 1</size>
             </box>
           </geometry>
         </collision>
         <visual name="wall_00">
-          <pose>4.5000 4.7600 0.5 0 0 0</pose>
+          <pose>3.1500 3.3320 0.5 0 0 0</pose>
           <geometry>
             <box>
-              <size>11.520 0.120 1.0</size>
+              <size>8.0640 0.0840 1</size>
             </box>
           </geometry>
           <material>
@@ -55,18 +55,18 @@
           </material>
         </visual>
         <collision name="wall_01">
-          <pose>-1.2050 3.0750 0.5 0 0 0</pose>
+          <pose>-0.8435 2.1525 0.5 0 0 0</pose>
           <geometry>
             <box>
-              <size>0.110 3.250 1.0</size>
+              <size>0.0770 2.2750 1</size>
             </box>
           </geometry>
         </collision>
         <visual name="wall_01">
-          <pose>-1.2050 3.0750 0.5 0 0 0</pose>
+          <pose>-0.8435 2.1525 0.5 0 0 0</pose>
           <geometry>
             <box>
-              <size>0.110 3.250 1.0</size>
+              <size>0.0770 2.2750 1</size>
             </box>
           </geometry>
           <material>
@@ -75,18 +75,18 @@
           </material>
         </visual>
         <collision name="wall_02">
-          <pose>2.7050 3.0750 0.5 0 0 0</pose>
+          <pose>1.8935 2.1525 0.5 0 0 0</pose>
           <geometry>
             <box>
-              <size>0.250 3.250 1.0</size>
+              <size>0.1750 2.2750 1</size>
             </box>
           </geometry>
         </collision>
         <visual name="wall_02">
-          <pose>2.7050 3.0750 0.5 0 0 0</pose>
+          <pose>1.8935 2.1525 0.5 0 0 0</pose>
           <geometry>
             <box>
-              <size>0.250 3.250 1.0</size>
+              <size>0.1750 2.2750 1</size>
             </box>
           </geometry>
           <material>
@@ -95,18 +95,18 @@
           </material>
         </visual>
         <collision name="wall_03">
-          <pose>6.7750 3.0750 0.5 0 0 0</pose>
+          <pose>4.7425 2.1525 0.5 0 0 0</pose>
           <geometry>
             <box>
-              <size>0.250 3.250 1.0</size>
+              <size>0.1750 2.2750 1</size>
             </box>
           </geometry>
         </collision>
         <visual name="wall_03">
-          <pose>6.7750 3.0750 0.5 0 0 0</pose>
+          <pose>4.7425 2.1525 0.5 0 0 0</pose>
           <geometry>
             <box>
-              <size>0.250 3.250 1.0</size>
+              <size>0.1750 2.2750 1</size>
             </box>
           </geometry>
           <material>
@@ -115,18 +115,18 @@
           </material>
         </visual>
         <collision name="wall_04">
-          <pose>10.2050 3.0750 0.5 0 0 0</pose>
+          <pose>7.1435 2.1525 0.5 0 0 0</pose>
           <geometry>
             <box>
-              <size>0.110 3.250 1.0</size>
+              <size>0.0770 2.2750 1</size>
             </box>
           </geometry>
         </collision>
         <visual name="wall_04">
-          <pose>10.2050 3.0750 0.5 0 0 0</pose>
+          <pose>7.1435 2.1525 0.5 0 0 0</pose>
           <geometry>
             <box>
-              <size>0.110 3.250 1.0</size>
+              <size>0.0770 2.2750 1</size>
             </box>
           </geometry>
           <material>
@@ -135,18 +135,18 @@
           </material>
         </visual>
         <collision name="wall_05">
-          <pose>-0.5800 1.3250 0.5 0 0 0</pose>
+          <pose>-0.4060 0.9275 0.5 0 0 0</pose>
           <geometry>
             <box>
-              <size>1.360 0.250 1.0</size>
+              <size>0.9520 0.1750 1</size>
             </box>
           </geometry>
         </collision>
         <visual name="wall_05">
-          <pose>-0.5800 1.3250 0.5 0 0 0</pose>
+          <pose>-0.4060 0.9275 0.5 0 0 0</pose>
           <geometry>
             <box>
-              <size>1.360 0.250 1.0</size>
+              <size>0.9520 0.1750 1</size>
             </box>
           </geometry>
           <material>
@@ -155,18 +155,18 @@
           </material>
         </visual>
         <collision name="wall_06">
-          <pose>2.5000 1.3250 0.5 0 0 0</pose>
+          <pose>1.7500 0.9275 0.5 0 0 0</pose>
           <geometry>
             <box>
-              <size>2.600 0.250 1.0</size>
+              <size>1.8200 0.1750 1</size>
             </box>
           </geometry>
         </collision>
         <visual name="wall_06">
-          <pose>2.5000 1.3250 0.5 0 0 0</pose>
+          <pose>1.7500 0.9275 0.5 0 0 0</pose>
           <geometry>
             <box>
-              <size>2.600 0.250 1.0</size>
+              <size>1.8200 0.1750 1</size>
             </box>
           </geometry>
           <material>
@@ -175,18 +175,18 @@
           </material>
         </visual>
         <collision name="wall_07">
-          <pose>6.9500 1.3250 0.5 0 0 0</pose>
+          <pose>4.8650 0.9275 0.5 0 0 0</pose>
           <geometry>
             <box>
-              <size>2.700 0.250 1.0</size>
+              <size>1.8900 0.1750 1</size>
             </box>
           </geometry>
         </collision>
         <visual name="wall_07">
-          <pose>6.9500 1.3250 0.5 0 0 0</pose>
+          <pose>4.8650 0.9275 0.5 0 0 0</pose>
           <geometry>
             <box>
-              <size>2.700 0.250 1.0</size>
+              <size>1.8900 0.1750 1</size>
             </box>
           </geometry>
           <material>
@@ -195,18 +195,18 @@
           </material>
         </visual>
         <collision name="wall_08">
-          <pose>9.8800 1.3250 0.5 0 0 0</pose>
+          <pose>6.9160 0.9275 0.5 0 0 0</pose>
           <geometry>
             <box>
-              <size>0.760 0.250 1.0</size>
+              <size>0.5320 0.1750 1</size>
             </box>
           </geometry>
         </collision>
         <visual name="wall_08">
-          <pose>9.8800 1.3250 0.5 0 0 0</pose>
+          <pose>6.9160 0.9275 0.5 0 0 0</pose>
           <geometry>
             <box>
-              <size>0.760 0.250 1.0</size>
+              <size>0.5320 0.1750 1</size>
             </box>
           </geometry>
           <material>
@@ -215,18 +215,18 @@
           </material>
         </visual>
         <collision name="wall_09">
-          <pose>-1.2050 -0.0250 0.5 0 0 0</pose>
+          <pose>-0.8435 -0.0175 0.5 0 0 0</pose>
           <geometry>
             <box>
-              <size>0.110 2.450 1.0</size>
+              <size>0.0770 1.7150 1</size>
             </box>
           </geometry>
         </collision>
         <visual name="wall_09">
-          <pose>-1.2050 -0.0250 0.5 0 0 0</pose>
+          <pose>-0.8435 -0.0175 0.5 0 0 0</pose>
           <geometry>
             <box>
-              <size>0.110 2.450 1.0</size>
+              <size>0.0770 1.7150 1</size>
             </box>
           </geometry>
           <material>
@@ -235,18 +235,18 @@
           </material>
         </visual>
         <collision name="wall_10">
-          <pose>10.2050 -0.0250 0.5 0 0 0</pose>
+          <pose>7.1435 -0.0175 0.5 0 0 0</pose>
           <geometry>
             <box>
-              <size>0.110 2.450 1.0</size>
+              <size>0.0770 1.7150 1</size>
             </box>
           </geometry>
         </collision>
         <visual name="wall_10">
-          <pose>10.2050 -0.0250 0.5 0 0 0</pose>
+          <pose>7.1435 -0.0175 0.5 0 0 0</pose>
           <geometry>
             <box>
-              <size>0.110 2.450 1.0</size>
+              <size>0.0770 1.7150 1</size>
             </box>
           </geometry>
           <material>
@@ -255,18 +255,18 @@
           </material>
         </visual>
         <collision name="wall_11">
-          <pose>-0.0550 -1.3750 0.5 0 0 0</pose>
+          <pose>-0.0385 -0.9625 0.5 0 0 0</pose>
           <geometry>
             <box>
-              <size>2.410 0.250 1.0</size>
+              <size>1.6870 0.1750 1</size>
             </box>
           </geometry>
         </collision>
         <visual name="wall_11">
-          <pose>-0.0550 -1.3750 0.5 0 0 0</pose>
+          <pose>-0.0385 -0.9625 0.5 0 0 0</pose>
           <geometry>
             <box>
-              <size>2.410 0.250 1.0</size>
+              <size>1.6870 0.1750 1</size>
             </box>
           </geometry>
           <material>
@@ -275,18 +275,18 @@
           </material>
         </visual>
         <collision name="wall_12">
-          <pose>3.9500 -1.3750 0.5 0 0 0</pose>
+          <pose>2.7650 -0.9625 0.5 0 0 0</pose>
           <geometry>
             <box>
-              <size>2.900 0.250 1.0</size>
+              <size>2.0300 0.1750 1</size>
             </box>
           </geometry>
         </collision>
         <visual name="wall_12">
-          <pose>3.9500 -1.3750 0.5 0 0 0</pose>
+          <pose>2.7650 -0.9625 0.5 0 0 0</pose>
           <geometry>
             <box>
-              <size>2.900 0.250 1.0</size>
+              <size>2.0300 0.1750 1</size>
             </box>
           </geometry>
           <material>
@@ -295,18 +295,18 @@
           </material>
         </visual>
         <collision name="wall_13">
-          <pose>7.8250 -1.3750 0.5 0 0 0</pose>
+          <pose>5.4775 -0.9625 0.5 0 0 0</pose>
           <geometry>
             <box>
-              <size>1.350 0.250 1.0</size>
+              <size>0.9450 0.1750 1</size>
             </box>
           </geometry>
         </collision>
         <visual name="wall_13">
-          <pose>7.8250 -1.3750 0.5 0 0 0</pose>
+          <pose>5.4775 -0.9625 0.5 0 0 0</pose>
           <geometry>
             <box>
-              <size>1.350 0.250 1.0</size>
+              <size>0.9450 0.1750 1</size>
             </box>
           </geometry>
           <material>
@@ -315,18 +315,18 @@
           </material>
         </visual>
         <collision name="wall_14">
-          <pose>9.9300 -1.3750 0.5 0 0 0</pose>
+          <pose>6.9510 -0.9625 0.5 0 0 0</pose>
           <geometry>
             <box>
-              <size>0.660 0.250 1.0</size>
+              <size>0.4620 0.1750 1</size>
             </box>
           </geometry>
         </collision>
         <visual name="wall_14">
-          <pose>9.9300 -1.3750 0.5 0 0 0</pose>
+          <pose>6.9510 -0.9625 0.5 0 0 0</pose>
           <geometry>
             <box>
-              <size>0.660 0.250 1.0</size>
+              <size>0.4620 0.1750 1</size>
             </box>
           </geometry>
           <material>
@@ -335,18 +335,18 @@
           </material>
         </visual>
         <collision name="wall_15">
-          <pose>-1.2050 -3.0500 0.5 0 0 0</pose>
+          <pose>-0.8435 -2.1350 0.5 0 0 0</pose>
           <geometry>
             <box>
-              <size>0.110 3.100 1.0</size>
+              <size>0.0770 2.1700 1</size>
             </box>
           </geometry>
         </collision>
         <visual name="wall_15">
-          <pose>-1.2050 -3.0500 0.5 0 0 0</pose>
+          <pose>-0.8435 -2.1350 0.5 0 0 0</pose>
           <geometry>
             <box>
-              <size>0.110 3.100 1.0</size>
+              <size>0.0770 2.1700 1</size>
             </box>
           </geometry>
           <material>
@@ -355,18 +355,18 @@
           </material>
         </visual>
         <collision name="wall_16">
-          <pose>3.3750 -3.0500 0.5 0 0 0</pose>
+          <pose>2.3625 -2.1350 0.5 0 0 0</pose>
           <geometry>
             <box>
-              <size>0.250 3.100 1.0</size>
+              <size>0.1750 2.1700 1</size>
             </box>
           </geometry>
         </collision>
         <visual name="wall_16">
-          <pose>3.3750 -3.0500 0.5 0 0 0</pose>
+          <pose>2.3625 -2.1350 0.5 0 0 0</pose>
           <geometry>
             <box>
-              <size>0.250 3.100 1.0</size>
+              <size>0.1750 2.1700 1</size>
             </box>
           </geometry>
           <material>
@@ -375,18 +375,18 @@
           </material>
         </visual>
         <collision name="wall_17">
-          <pose>7.5750 -3.0500 0.5 0 0 0</pose>
+          <pose>5.3025 -2.1350 0.5 0 0 0</pose>
           <geometry>
             <box>
-              <size>0.250 3.100 1.0</size>
+              <size>0.1750 2.1700 1</size>
             </box>
           </geometry>
         </collision>
         <visual name="wall_17">
-          <pose>7.5750 -3.0500 0.5 0 0 0</pose>
+          <pose>5.3025 -2.1350 0.5 0 0 0</pose>
           <geometry>
             <box>
-              <size>0.250 3.100 1.0</size>
+              <size>0.1750 2.1700 1</size>
             </box>
           </geometry>
           <material>
@@ -395,18 +395,18 @@
           </material>
         </visual>
         <collision name="wall_18">
-          <pose>10.2050 -3.0500 0.5 0 0 0</pose>
+          <pose>7.1435 -2.1350 0.5 0 0 0</pose>
           <geometry>
             <box>
-              <size>0.110 3.100 1.0</size>
+              <size>0.0770 2.1700 1</size>
             </box>
           </geometry>
         </collision>
         <visual name="wall_18">
-          <pose>10.2050 -3.0500 0.5 0 0 0</pose>
+          <pose>7.1435 -2.1350 0.5 0 0 0</pose>
           <geometry>
             <box>
-              <size>0.110 3.100 1.0</size>
+              <size>0.0770 2.1700 1</size>
             </box>
           </geometry>
           <material>
@@ -415,18 +415,18 @@
           </material>
         </visual>
         <collision name="wall_19">
-          <pose>4.5000 -4.6550 0.5 0 0 0</pose>
+          <pose>3.1500 -3.2585 0.5 0 0 0</pose>
           <geometry>
             <box>
-              <size>11.520 0.110 1.0</size>
+              <size>8.0640 0.0770 1</size>
             </box>
           </geometry>
         </collision>
         <visual name="wall_19">
-          <pose>4.5000 -4.6550 0.5 0 0 0</pose>
+          <pose>3.1500 -3.2585 0.5 0 0 0</pose>
           <geometry>
             <box>
-              <size>11.520 0.110 1.0</size>
+              <size>8.0640 0.0770 1</size>
             </box>
           </geometry>
           <material>
@@ -435,18 +435,18 @@
           </material>
         </visual>
         <collision name="obstacle_00">
-          <pose>5.5400 4.1150 0.5 0 0 0</pose>
+          <pose>4.0780 2.8805 0.5 0 0 0</pose>
           <geometry>
             <box>
-              <size>0.980 0.370 1.0</size>
+              <size>0.4000 0.4000 1</size>
             </box>
           </geometry>
         </collision>
         <visual name="obstacle_00">
-          <pose>5.5400 4.1150 0.5 0 0 0</pose>
+          <pose>4.0780 2.8805 0.5 0 0 0</pose>
           <geometry>
             <box>
-              <size>0.980 0.370 1.0</size>
+              <size>0.4000 0.4000 1</size>
             </box>
           </geometry>
           <material>
@@ -455,18 +455,18 @@
           </material>
         </visual>
         <collision name="obstacle_01">
-          <pose>1.7550 3.4900 0.5 0 0 0</pose>
+          <pose>1.2285 2.4430 0.5 0 0 0</pose>
           <geometry>
             <box>
-              <size>0.990 0.580 1.0</size>
+              <size>0.4000 0.4000 1</size>
             </box>
           </geometry>
         </collision>
         <visual name="obstacle_01">
-          <pose>1.7550 3.4900 0.5 0 0 0</pose>
+          <pose>1.2285 2.4430 0.5 0 0 0</pose>
           <geometry>
             <box>
-              <size>0.990 0.580 1.0</size>
+              <size>0.4000 0.4000 1</size>
             </box>
           </geometry>
           <material>
@@ -475,18 +475,18 @@
           </material>
         </visual>
         <collision name="obstacle_02">
-          <pose>4.6900 2.6800 0.5 0 0 0</pose>
+          <pose>3.2830 1.8760 0.5 0 0 0</pose>
           <geometry>
             <box>
-              <size>1.880 0.300 1.0</size>
+              <size>0.4000 0.4000 1</size>
             </box>
           </geometry>
         </collision>
         <visual name="obstacle_02">
-          <pose>4.6900 2.6800 0.5 0 0 0</pose>
+          <pose>3.2830 1.8760 0.5 0 0 0</pose>
           <geometry>
             <box>
-              <size>1.880 0.300 1.0</size>
+              <size>0.4000 0.4000 1</size>
             </box>
           </geometry>
           <material>
@@ -495,18 +495,18 @@
           </material>
         </visual>
         <collision name="obstacle_03">
-          <pose>-0.5000 2.5500 0.5 0 0 0</pose>
+          <pose>-0.3500 1.7850 0.5 0 0 0</pose>
           <geometry>
             <box>
-              <size>0.760 1.300 1.0</size>
+              <size>0.4000 0.4000 1</size>
             </box>
           </geometry>
         </collision>
         <visual name="obstacle_03">
-          <pose>-0.5000 2.5500 0.5 0 0 0</pose>
+          <pose>-0.3500 1.7850 0.5 0 0 0</pose>
           <geometry>
             <box>
-              <size>0.760 1.300 1.0</size>
+              <size>0.4000 0.4000 1</size>
             </box>
           </geometry>
           <material>
@@ -515,18 +515,18 @@
           </material>
         </visual>
         <collision name="obstacle_04">
-          <pose>6.6200 0.6550 0.5 0 0 0</pose>
+          <pose>4.6340 0.4585 0.5 0 0 0</pose>
           <geometry>
             <box>
-              <size>1.080 1.090 1.0</size>
+              <size>0.4000 0.4000 1</size>
             </box>
           </geometry>
         </collision>
         <visual name="obstacle_04">
-          <pose>6.6200 0.6550 0.5 0 0 0</pose>
+          <pose>4.6340 0.4585 0.5 0 0 0</pose>
           <geometry>
             <box>
-              <size>1.080 1.090 1.0</size>
+              <size>0.4000 0.4000 1</size>
             </box>
           </geometry>
           <material>
@@ -535,18 +535,18 @@
           </material>
         </visual>
         <collision name="obstacle_05">
-          <pose>3.6750 -0.0150 0.5 0 0 0</pose>
+          <pose>2.5725 0.1400 0.5 0 0 0</pose>
           <geometry>
             <box>
-              <size>1.250 0.470 1.0</size>
+              <size>0.4000 0.4000 1</size>
             </box>
           </geometry>
         </collision>
         <visual name="obstacle_05">
-          <pose>3.6750 -0.0150 0.5 0 0 0</pose>
+          <pose>2.5725 0.1400 0.5 0 0 0</pose>
           <geometry>
             <box>
-              <size>1.250 0.470 1.0</size>
+              <size>0.4000 0.4000 1</size>
             </box>
           </geometry>
           <material>
@@ -555,18 +555,18 @@
           </material>
         </visual>
         <collision name="obstacle_06">
-          <pose>-0.0750 -3.5500 0.5 0 0 0</pose>
+          <pose>0.1475 -2.2850 0.5 0 0 0</pose>
           <geometry>
             <box>
-              <size>0.950 0.700 1.0</size>
+              <size>0.4000 0.4000 1</size>
             </box>
           </geometry>
         </collision>
         <visual name="obstacle_06">
-          <pose>-0.0750 -3.5500 0.5 0 0 0</pose>
+          <pose>0.1475 -2.2850 0.5 0 0 0</pose>
           <geometry>
             <box>
-              <size>0.950 0.700 1.0</size>
+              <size>0.4000 0.4000 1</size>
             </box>
           </geometry>
           <material>
@@ -575,18 +575,18 @@
           </material>
         </visual>
         <collision name="obstacle_07">
-          <pose>5.1100 -3.6350 0.5 0 0 0</pose>
+          <pose>3.5770 -2.5445 0.5 0 0 0</pose>
           <geometry>
             <box>
-              <size>1.420 0.630 1.0</size>
+              <size>0.4000 0.4000 1</size>
             </box>
           </geometry>
         </collision>
         <visual name="obstacle_07">
-          <pose>5.1100 -3.6350 0.5 0 0 0</pose>
+          <pose>3.5770 -2.5445 0.5 0 0 0</pose>
           <geometry>
             <box>
-              <size>1.420 0.630 1.0</size>
+              <size>0.4000 0.4000 1</size>
             </box>
           </geometry>
           <material>

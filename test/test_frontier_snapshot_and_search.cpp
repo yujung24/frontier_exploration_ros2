@@ -25,6 +25,7 @@ limitations under the License.
 #include <vector>
 
 #include "frontier_exploration_ros2/frontier_explorer_core.hpp"
+#include "frontier_exploration_ros2/safety_selection.hpp"
 
 namespace frontier_exploration_ros2
 {
@@ -856,6 +857,10 @@ TEST(FrontierSelectionTests, ObservationModeProducesAViewpointGoal)
   ASSERT_TRUE(selection.frontier->goal_point.has_value());
   const auto goal = frontier_position(*selection.frontier);
   EXPECT_LE(std::hypot(goal.first - 8.0, goal.second - 10.0), 0.41);
+  const auto sequence = core->select_frontier_sequence(
+    frontiers, make_pose(10.0, 10.0, 0.0), selection.frontier);
+  ASSERT_EQ(sequence.size(), 1U);
+  EXPECT_EQ(frontier_position(sequence.front()), goal);
 }
 
 TEST(FrontierSelectionTests, SafetyModeSelectsReachableFrontier)
@@ -873,10 +878,181 @@ TEST(FrontierSelectionTests, SafetyModeSelectsReachableFrontier)
     make_frontier(12.0, 10.0),
   };
 
-  const auto selection = core->select_frontier(frontiers, make_pose(10.0, 10.0, 0.0));
+  const auto pose = make_pose(10.0, 10.0, 0.0);
+  const auto selection = core->select_frontier(frontiers, pose);
 
   ASSERT_TRUE(selection.frontier.has_value());
   EXPECT_EQ(selection.mode, "safety");
+  const auto sequence = core->select_frontier_sequence(frontiers, pose, selection.frontier);
+  ASSERT_EQ(sequence.size(), 1U);
+  EXPECT_EQ(frontier_position(sequence.front()), frontier_position(*selection.frontier));
+}
+
+TEST(FrontierSelectionTests, SafetyModeDoesNotDispatchLocallyBlockedFrontier)
+{
+  auto core = make_snapshot_core();
+  core->params.selection_mode = "safety";
+  core->params.occ_threshold = 65;
+  auto local_costmap = build_grid(20, 20, 0);
+  set_cells(local_costmap, {{7, 9}, {7, 10}, {8, 9}, {8, 10}}, 67);
+  core->local_costmap = OccupancyGrid2d(local_costmap);
+
+  const auto pose = make_pose(10.0, 10.0, 0.0);
+  const FrontierSequence blocked{make_frontier(8.0, 10.0)};
+  const auto selection = core->select_frontier(blocked, pose);
+  EXPECT_EQ(selection.mode, "safety");
+  EXPECT_FALSE(selection.frontier.has_value());
+  EXPECT_TRUE(core->select_frontier_sequence(blocked, pose, selection.frontier).empty());
+
+  const FrontierSequence mixed{blocked.front(), make_frontier(12.0, 10.0)};
+  const auto alternate = core->select_frontier(mixed, pose);
+  ASSERT_TRUE(alternate.frontier.has_value());
+  EXPECT_EQ(frontier_position(*alternate.frontier), frontier_position(mixed.back()));
+}
+
+TEST(FrontierSelectionTests, SafetyModeFindsNearbyApproachForBlockedRepresentative)
+{
+  auto core = make_snapshot_core();
+  core->params.selection_mode = "safety";
+  core->params.occ_threshold = 65;
+  auto local_costmap = build_grid(20, 20, 0);
+  set_cells(local_costmap, {{8, 10}}, 67);
+  core->local_costmap = OccupancyGrid2d(local_costmap);
+
+  const auto pose = make_pose(12.0, 10.0, 0.0);
+  const FrontierSequence frontiers{make_frontier(8.5, 10.5)};
+  const auto selection = core->select_frontier(frontiers, pose);
+  ASSERT_TRUE(selection.frontier.has_value());
+  EXPECT_EQ(selection.mode, "safety");
+  EXPECT_NE(frontier_position(*selection.frontier), frontier_position(frontiers.front()));
+  EXPECT_FALSE(core->frontier_cost_status(selection.frontier).has_value());
+}
+
+TEST(FrontierSelectionTests, SafetyModePrefersLongerWideCorridorOverShorterNarrowCorridor)
+{
+  auto core = make_snapshot_core();
+  core->params.selection_mode = "safety";
+  core->params.occ_threshold = 65;
+  core->params.safety_robot_radius_m = 0.28;
+  core->params.safety_preferred_clearance_m = 0.80;
+  core->params.safety_distance_weight = 1.0;
+  core->params.safety_clearance_weight = 3.0;
+
+  auto grid = build_grid(65, 70, 100);
+  grid.info.resolution = 0.10;
+  for (int y = 12; y <= 64; ++y) {
+    for (int x = 11; x <= 29; ++x) {
+      grid.data[y * grid.info.width + x] = 0;
+    }
+  }
+  for (int y = 17; y <= 23; ++y) {
+    for (int x = 20; x <= 55; ++x) {
+      grid.data[y * grid.info.width + x] = 0;
+    }
+  }
+  const OccupancyGrid2d corridors(grid);
+  core->map = corridors;
+  core->costmap = corridors;
+  core->local_costmap = corridors;
+  const auto [start_x, start_y] = corridors.mapToWorld(20, 20);
+  const auto pose = make_pose(start_x, start_y);
+  const auto [near_x, near_y] = corridors.mapToWorld(46, 20);
+  const auto [far_x, far_y] = corridors.mapToWorld(20, 51);
+  const FrontierSequence frontiers{make_frontier(near_x, near_y), make_frontier(far_x, far_y)};
+
+  const auto score = [&](const FrontierLike & frontier) {
+      return compute_safety_path_score(
+        corridors, pose, frontier_position(frontier), core->params.safety_robot_radius_m,
+        core->params.safety_preferred_clearance_m, core->params.safety_distance_weight,
+        core->params.safety_clearance_weight, core->params.occ_threshold);
+    };
+  const auto near = score(frontiers.front());
+  const auto far = score(frontiers.back());
+  ASSERT_TRUE(near.reachable);
+  ASSERT_TRUE(far.reachable);
+  EXPECT_LT(near.path_length_m, far.path_length_m);
+  EXPECT_GT(near.clearance_cost, far.clearance_cost);
+  EXPECT_GT(near.path_length_m + near.clearance_cost, far.path_length_m + far.clearance_cost);
+  RecordProperty("near_distance_m", std::to_string(near.path_length_m));
+  RecordProperty("near_clearance_cost", std::to_string(near.clearance_cost));
+  RecordProperty("far_distance_m", std::to_string(far.path_length_m));
+  RecordProperty("far_clearance_cost", std::to_string(far.clearance_cost));
+
+  const auto safety = core->select_frontier(frontiers, pose);
+  ASSERT_TRUE(safety.frontier.has_value());
+  EXPECT_EQ(frontier_position(*safety.frontier), frontier_position(frontiers.back()));
+
+  core->params.safety_clearance_weight = 0.0;
+  const auto distance_only = core->select_frontier(frontiers, pose);
+  ASSERT_TRUE(distance_only.frontier.has_value());
+  EXPECT_EQ(frontier_position(*distance_only.frontier), frontier_position(frontiers.front()));
+
+  core->params.safety_robot_radius_m = 0.45;
+  EXPECT_FALSE(score(frontiers.front()).reachable);
+  const auto minimum_clearance = core->select_frontier(frontiers, pose);
+  ASSERT_TRUE(minimum_clearance.frontier.has_value());
+  EXPECT_EQ(frontier_position(*minimum_clearance.frontier), frontier_position(frontiers.back()));
+}
+
+TEST(FrontierSelectionTests, SafetyModeDoesNotApplyRobotRadiusTwiceToInflation)
+{
+  auto grid = build_grid(32, 32, 0);
+  grid.info.resolution = 0.05;
+  for (int y = 0; y < 32; ++y) {
+    set_cells(grid, {{0, y}}, 100);
+    set_cells(grid, {{1, y}, {2, y}, {3, y}, {4, y}, {5, y}}, 67);
+    set_cells(grid, {{6, y}}, 58);
+  }
+  const OccupancyGrid2d costmap(grid);
+  const auto [x, y] = costmap.mapToWorld(6, 5);
+  const auto pose = make_pose(x, y);
+  EXPECT_TRUE(compute_safety_path_score(
+    costmap, pose, costmap.mapToWorld(6, 25), 0.28, 0.80, 1.0, 3.0, 65).reachable);
+  EXPECT_FALSE(compute_safety_path_score(
+    costmap, pose, costmap.mapToWorld(5, 25), 0.28, 0.80, 1.0, 3.0, 65).reachable);
+  EXPECT_FALSE(compute_safety_path_score(
+    costmap, pose, costmap.mapToWorld(6, 25), 0.31, 0.80, 1.0, 3.0, 65).reachable);
+}
+
+TEST(FrontierSelectionTests, SafetyModeDoesNotTreatUnknownSpaceAsAFreeShortcut)
+{
+  auto grid = build_grid(40, 30, 0);
+  grid.info.resolution = 0.1;
+  for (int y = 0; y < 30; ++y) {
+    set_cells(grid, {{19, y}, {20, y}}, -1);
+  }
+  const OccupancyGrid2d disconnected(grid);
+  const auto [start_x, start_y] = disconnected.mapToWorld(10, 10);
+  const auto pose = make_pose(start_x, start_y);
+  const auto goal = disconnected.mapToWorld(30, 10);
+  EXPECT_FALSE(compute_safety_path_score(
+    disconnected, pose, goal, 0.28, 0.80, 1.0, 3.0, 65).reachable);
+
+  set_cells(grid, {{19, 16}, {20, 16}}, 0);
+  const auto detour = compute_safety_path_score(
+    OccupancyGrid2d(grid), pose, goal, 0.28, 0.80, 1.0, 3.0, 65);
+  ASSERT_TRUE(detour.reachable);
+  EXPECT_GT(detour.path_length_m, 2.0);
+}
+
+TEST(FrontierSelectionTests, SafetyModeCanExitButCannotEnterInsufficientClearance)
+{
+  auto grid = build_grid(30, 30, 0);
+  grid.info.resolution = 0.05;
+  for (int y = 0; y < 30; ++y) {
+    set_cells(grid, {{0, y}}, 100);
+  }
+  const OccupancyGrid2d costmap(grid);
+  const auto [start_x, start_y] = costmap.mapToWorld(5, 10);
+  const auto [safe_x, safe_y] = costmap.mapToWorld(16, 10);
+  const auto pose = make_pose(start_x, start_y);
+  const auto safe = make_pose(safe_x, safe_y);
+  EXPECT_TRUE(compute_safety_path_score(
+    costmap, pose, {safe_x, safe_y}, 0.28, 0.80, 1.0, 3.0, 65).reachable);
+  EXPECT_FALSE(compute_safety_path_score(
+    costmap, safe, {start_x, start_y}, 0.28, 0.80, 1.0, 3.0, 65).reachable);
+  EXPECT_FALSE(compute_safety_path_score(
+    costmap, pose, costmap.mapToWorld(4, 10), 0.28, 0.80, 1.0, 3.0, 65).reachable);
 }
 
 }  // namespace

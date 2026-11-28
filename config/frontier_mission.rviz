@@ -86,6 +86,26 @@ Visualization Manager:
       Topic:
         Value: /explore/selected_frontier
       Value: true
+    - Class: rviz_default_plugins/Path
+      Color: 0; 220; 255
+      Enabled: true
+      Line Style: Billboards
+      Line Width: 0.035
+      Name: Mission Global Plan
+      Topic:
+        Durability Policy: Transient Local
+        Value: /mission/global_path
+      Value: true
+    - Class: rviz_default_plugins/Path
+      Color: 255; 170; 0
+      Enabled: true
+      Line Style: Billboards
+      Line Width: 0.025
+      Name: Mission Actual Trajectory
+      Topic:
+        Durability Policy: Transient Local
+        Value: /mission/actual_path
+      Value: true
   Enabled: true
   Global Options:
     Background Color: 48; 48; 48

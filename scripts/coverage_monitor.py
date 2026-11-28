@@ -121,7 +121,8 @@ def load_reference(path, args):
     if resolution is None:
         raise ValueError("Reference map resolution is required (YAML resolution or --resolution)")
 
-    return floor.astype(bool), float(resolution), float(origin_x), float(origin_y), float(origin_yaw)
+    # Image rows start at the top, while ROS map indices start at the bottom.
+    return np.flipud(floor), float(resolution), float(origin_x), float(origin_y), float(origin_yaw)
 
 
 def quaternion_yaw(z, w):
@@ -329,7 +330,7 @@ def main():
         pass
     finally:
         node.destroy_node()
-        rclpy.shutdown()
+        rclpy.try_shutdown()
 
 
 if __name__ == "__main__":

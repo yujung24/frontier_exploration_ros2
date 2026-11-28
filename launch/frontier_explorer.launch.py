@@ -9,6 +9,16 @@ from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
 
 
+SAFETY_PARAMETER_OVERRIDES = {
+    "safety_preferred_clearance_m": float,
+    "safety_clearance_weight": float,
+    "frontier_suppression_enabled": bool,
+    "frontier_suppression_attempt_threshold": int,
+    "frontier_suppression_timeout_s": float,
+    "frontier_visit_tolerance": float,
+}
+
+
 def _parse_optional_bool(value: str, arg_name: str):
     normalized = value.strip().lower()
     if normalized == "":
@@ -69,6 +79,13 @@ def _create_frontier_actions(context):
     selection_mode_value = selection_mode.perform(context).strip().lower()
     if selection_mode_value:
         frontier_overrides["selection_mode"] = selection_mode_value
+
+    for name, value_type in SAFETY_PARAMETER_OVERRIDES.items():
+        value = LaunchConfiguration(name).perform(context).strip()
+        if value:
+            frontier_overrides[name] = (
+                _parse_optional_bool(value, name) if value_type is bool else value_type(value)
+            )
 
     frontier_node = Node(
         package="frontier_exploration_ros2",
@@ -136,6 +153,7 @@ def _create_frontier_actions(context):
                     "mission_config": mission_config,
                     "world_name": world_name,
                     "output": mission_output,
+                    "planner_id": planner_id,
                     "use_sim_time": use_sim_time,
                 },
             ],
@@ -209,6 +227,14 @@ def generate_launch_description():
                 default_value="",
                 description="Optional selection mode for the frontier explorer.",
             ),
+            *[
+                DeclareLaunchArgument(
+                    name,
+                    default_value="",
+                    description="Optional explorer override. Leave empty to use the parameter file.",
+                )
+                for name in SAFETY_PARAMETER_OVERRIDES
+            ],
             DeclareLaunchArgument(
                 "time_strategy",
                 default_value="C",

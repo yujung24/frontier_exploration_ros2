@@ -934,6 +934,12 @@ TEST(PreemptionFlowTests, VisibleGainExhaustionCancelsAndDefersSnapshotReselecti
       return result;
     };
 
+  const auto selection_mode = core->params.selection_mode;
+  core->params.selection_mode = "safety";
+  core->consider_preempt_active_goal("map");
+  EXPECT_EQ(fake_handle->cancel_calls, 0);
+  core->params.selection_mode = selection_mode;
+
   core->consider_preempt_active_goal("map");
 
   EXPECT_EQ(frontier_search_calls, 0);

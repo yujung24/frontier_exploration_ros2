@@ -424,9 +424,13 @@ double FrontierExplorerCore::frontier_snapshot_min_goal_distance_for_pose(
 void FrontierExplorerCore::consider_preempt_active_goal(const std::string & trigger_source)
 {
   // Costmap-triggered calls only update blocked reason; map-triggered calls may reseat goals.
-  const bool completion_distance_enabled = params.goal_preemption_complete_if_within_m > 0.0;
+  const bool visible_gain_preemption_enabled =
+    params.selection_mode != "safety" && params.goal_preemption_enabled;
+  const bool completion_distance_enabled =
+    params.selection_mode != "safety" && params.selection_mode != "observation" &&
+    params.goal_preemption_complete_if_within_m > 0.0;
   const bool preemption_allowed = (
-    params.goal_preemption_enabled ||
+    visible_gain_preemption_enabled ||
     params.goal_skip_on_blocked_goal ||
     completion_distance_enabled);
   if (!preemption_allowed) {
@@ -453,7 +457,7 @@ void FrontierExplorerCore::consider_preempt_active_goal(const std::string & trig
     frontier_cost_status(active_goal_frontier) : std::optional<std::string>{};
   if (
     !active_goal_cost_status.has_value() &&
-    !params.goal_preemption_enabled &&
+    !visible_gain_preemption_enabled &&
     !completion_distance_enabled)
   {
     // Nothing to do when all active-goal update triggers are effectively inactive.
@@ -498,7 +502,7 @@ if (!active_goal_cost_status.has_value()) {
   if (
     !revealed_completion_distance_reached &&
     !active_goal_cost_status.has_value() &&
-    !params.goal_preemption_enabled)
+    !visible_gain_preemption_enabled)
   {
     return;
   }
@@ -528,7 +532,7 @@ if (!active_goal_cost_status.has_value()) {
   if (
     !revealed_completion_distance_reached &&
     !active_goal_cost_status.has_value() &&
-    params.goal_preemption_enabled &&
+    visible_gain_preemption_enabled &&
     elapsed < params.goal_preemption_min_interval_s)
   {
     return;
@@ -537,7 +541,7 @@ if (!active_goal_cost_status.has_value()) {
   // Visible-gain gate is only meaningful on the map-triggered revealed-preemption path.
   const bool visible_gain_gate_active =
     !active_goal_cost_status.has_value() &&
-    params.goal_preemption_enabled;
+    visible_gain_preemption_enabled;
   bool visible_reveal_gain_exhausted = false;
 
   if (visible_gain_gate_active && !revealed_completion_distance_reached) {
@@ -629,7 +633,7 @@ if (!active_goal_cost_status.has_value()) {
   if (
     !revealed_completion_distance_reached &&
     !active_goal_cost_status.has_value() &&
-    params.goal_preemption_enabled &&
+    visible_gain_preemption_enabled &&
     frontier_exists_in_set(active_goal_frontier, filtered_frontiers))
   {
     // Snapshot membership remains the final authority for revealed-preemption.
@@ -736,7 +740,11 @@ void FrontierExplorerCore::issue_active_goal_cancel()
   pending_cancel_reason.reset();
   cancel_request_in_progress = true;
   set_goal_state(GoalLifecycleState::CANCELING);
-  callbacks.log_debug(reason);
+  if (params.selection_mode == "safety") {
+    callbacks.log_info("Canceling Safety goal: " + reason);
+  } else {
+    callbacks.log_debug(reason);
+  }
 
   const int dispatch_id = current_dispatch_id;
   // Bind cancel response to current dispatch to ignore late/stale acknowledgements.
@@ -909,7 +917,7 @@ bool FrontierExplorerCore::send_frontier_goal(
   std::size_t dispatch_index = 0U;
   for (; dispatch_index < frontier_sequence.size(); ++dispatch_index) {
     const auto & candidate_frontier = frontier_sequence[dispatch_index];
-    if (!params.goal_skip_on_blocked_goal) {
+    if (!params.goal_skip_on_blocked_goal && params.selection_mode != "safety") {
       break;
     }
 
@@ -935,10 +943,10 @@ bool FrontierExplorerCore::send_frontier_goal(
     dispatch_sequence.push_back(frontier_sequence[index]);
   }
 
-const auto goal_pose = build_dispatch_goal_pose(
-      dispatch_sequence.front(),
+  const auto goal_pose = build_dispatch_goal_pose(
+    dispatch_sequence.front(),
     current_pose,
-    bypass_min_distance_dispatch);
+    bypass_min_distance_dispatch || params.selection_mode == "safety");
   if (debug_outputs_enabled()) {
     callbacks.publish_selected_frontier_pose(goal_pose);
   }

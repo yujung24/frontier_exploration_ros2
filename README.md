@@ -24,7 +24,8 @@ ros2 launch slam_toolbox online_async_launch.py use_sim_time:=true
 ### Terminal 3: Nav2
 
 ```bash
-ros2 launch nav2_bringup navigation_launch.py use_sim_time:=true
+cd ~/colcon_ws/src/frontier_exploration_ros2
+ros2 launch ./launch/burger_navigation.launch.py use_sim_time:=true
 ```
 
 ## 2. Frontier Selection Methods
@@ -35,6 +36,10 @@ Run only one frontier explorer at a time.
 ### Method 1: Safety-Based Selection
 
 Selects frontiers based on path cost and obstacle clearance.
+Safety rejects blocked targets and paths below the robot's minimum clearance.
+If the representative target fails these checks, Safety scores nearby known-free
+approach points. It waits for updated map data when no eligible goal remains.
+Low observation gain alone does not cancel an active Safety goal.
 
 ```bash
 ros2 launch frontier_exploration_ros2 frontier_explorer.launch.py \
@@ -51,6 +56,8 @@ ros2 launch frontier_exploration_ros2 frontier_explorer.launch.py \
 ### Method 2: Observation-Based Selection
 
 Selects frontiers based on their expected observation or information gain.
+If Observation cannot select a viewpoint, the explorer tries the MRTSP order
+with the normal costmap dispatch checks. Nav2 reports goal arrival in Observation mode.
 
 ```bash
 ros2 launch frontier_exploration_ros2 frontier_explorer.launch.py \
@@ -74,6 +81,16 @@ ros2 launch frontier_exploration_ros2 frontier_explorer.launch.py \
 
 Run the coverage monitor in a separate terminal, preferably before starting frontier exploration, to evaluate exploration coverage against the ground-truth occupancy map.
 
+The Burger worlds and reference maps use the same basename. Start Gazebo at
+`x_pose:=0.0 y_pose:=0.0` to align the reference map with the exploration run.
+
+| Gazebo world | Ground-truth YAML |
+| --- | --- |
+| `worlds/mixed_rooms.world` | `maps/ground_truth/mixed_rooms.yaml` |
+| `worlds/two_passages.world` | `maps/ground_truth/two_passages.yaml` |
+| `worlds/different_room_sizes.world` | `maps/ground_truth/different_room_sizes.yaml` |
+| `worlds/turning_corridors.world` | `maps/ground_truth/turning_corridors.yaml` |
+
 ```bash
 cd ~/colcon_ws/src/frontier_exploration_ros2
 
@@ -93,9 +110,18 @@ Use a different output filename for each method to keep the evaluation results s
 
 ## 4. Optional Return-and-Final-Goal Mission
 
-Enable the separate Mission Manager to capture the robot's starting pose in `map`, stop the frontier explorer at 90% coverage, cancel the active Nav2 frontier goal, return to the captured pose, and then navigate to a world-specific fixed pose.
+Enable the Mission Manager to stop exploration at 90% coverage, move to the mission start, and ask Nav2 to compute a global path to the final goal. Once planning succeeds, it sends one navigation goal for the final destination. Nav2 may replan during navigation.
 
-Configure destinations in `config/mission.yaml` under `worlds/<world_name>`. Launch the selected frontier method with:
+Set the route in `config/mission.yaml` or pass another file with `mission_config:=...`. Coordinates use the `map` frame and yaw is in radians. Omit `start` to use the captured exploration start. Existing entries with `position` and `orientation` still specify a final goal.
+
+```yaml
+worlds:
+  mixed_rooms:
+    start: {x: 0.15, y: 0.0, yaw: 0.0}
+    goal: {x: 1.5, y: -0.2, yaw: 0.0}
+```
+
+Launch the selected frontier method with:
 
 ```bash
 ros2 launch frontier_exploration_ros2 frontier_explorer.launch.py \
@@ -103,6 +129,7 @@ ros2 launch frontier_exploration_ros2 frontier_explorer.launch.py \
   selection_mode:=safety \
   mission_manager_enabled:=true \
   world_name:=mixed_rooms \
+  planner_id:=GridBased \
   mission_output:=mixed_rooms_mission.json
 ```
 
@@ -116,7 +143,7 @@ ros2 run frontier_exploration_ros2 coverage_monitor.py \
   --output mixed_rooms_coverage.json
 ```
 
-The coverage monitor publishes `coverage_target_reached`; Mission Manager writes return/navigation timing and distance data to `mission_output`.
+The coverage monitor publishes `coverage_target_reached`. The RViz configuration shows the planned path on `/mission/global_path` and the sampled robot trajectory on `/mission/actual_path`. The mission result stores the planning time, path length, and return and final navigation results.
 
 ## Reference
 

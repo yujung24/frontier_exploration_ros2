@@ -20,12 +20,10 @@ constexpr double DIAGONAL = 1.4142135623730951;
 bool cell_blocked(const OccupancyGrid2d & grid, int mx, int my, int occ_threshold)
 {
   const int cost = grid.getCost(mx, my);
-  return cost >= 255 || (cost >= 0 && cost >= occ_threshold);
+  return cost < 0 || cost >= occ_threshold;
 }
 
-std::vector<double> obstacle_clearance_map(
-  const OccupancyGrid2d & grid,
-  int occ_threshold)
+std::vector<double> obstacle_clearance_map(const OccupancyGrid2d & grid)
 {
   const int width = grid.getSizeX();
   const int height = grid.getSizeY();
@@ -38,7 +36,7 @@ std::vector<double> obstacle_clearance_map(
 
   for (int my = 0; my < height; ++my) {
     for (int mx = 0; mx < width; ++mx) {
-      if (cell_blocked(grid, mx, my, occ_threshold)) {
+      if (grid.getCost(mx, my) >= static_cast<int>(OccupancyGrid2d::CostValues::LethalObstacle)) {
         const std::size_t index = static_cast<std::size_t>(my) * static_cast<std::size_t>(width)
           + static_cast<std::size_t>(mx);
         clearance[index] = 0.0;
@@ -104,15 +102,22 @@ SafetyPathScore compute_safety_path_score(
     return {};
   }
 
-  const std::vector<double> clearance = obstacle_clearance_map(costmap, occ_threshold);
+  // Nav2 costmaps already include inflation. Apply the robot radius to lethal
+  // obstacle cells, while still respecting the configured traversal threshold.
+  if (
+    cell_blocked(costmap, start_x, start_y, occ_threshold) ||
+    cell_blocked(costmap, goal_x, goal_y, occ_threshold))
+  {
+    return {};
+  }
+  const std::vector<double> clearance = obstacle_clearance_map(costmap);
   const std::size_t count = static_cast<std::size_t>(width) * static_cast<std::size_t>(height);
   const std::size_t start_index = static_cast<std::size_t>(start_y) * static_cast<std::size_t>(width)
     + static_cast<std::size_t>(start_x);
   const std::size_t goal_index = static_cast<std::size_t>(goal_y) * static_cast<std::size_t>(width)
     + static_cast<std::size_t>(goal_x);
 
-  if ((std::isfinite(clearance[start_index]) && clearance[start_index] < robot_radius_m) ||
-      (std::isfinite(clearance[goal_index]) && clearance[goal_index] < robot_radius_m)) {
+  if (clearance[goal_index] < robot_radius_m) {
     return {};
   }
 
@@ -139,7 +144,9 @@ SafetyPathScore compute_safety_path_score(
     for (int direction = 0; direction < 8; ++direction) {
       const int nx = mx + DX[direction];
       const int ny = my + DY[direction];
-      if (nx < 0 || ny < 0 || nx >= width || ny >= height) {
+      if (nx < 0 || ny < 0 || nx >= width || ny >= height ||
+        cell_blocked(costmap, nx, ny, occ_threshold))
+      {
         continue;
       }
 
@@ -153,7 +160,9 @@ SafetyPathScore compute_safety_path_score(
 
       const std::size_t neighbor = static_cast<std::size_t>(ny) * static_cast<std::size_t>(width)
         + static_cast<std::size_t>(nx);
-      if (std::isfinite(clearance[neighbor]) && clearance[neighbor] < robot_radius_m) {
+      // A goal can finish inside the configured margin due to Nav2's goal tolerance.
+      // Allow an exit from that margin only while clearance strictly improves.
+      if (clearance[neighbor] < robot_radius_m && clearance[neighbor] <= clearance[index]) {
         continue;
       }
 
